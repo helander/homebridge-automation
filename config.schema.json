@@ -1,7 +1,7 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "LocalControllerHomebridgePlugin",
   "pluginType": "platform",
-  "singular": true,
+  "singular": false,
   "schema": {
     "type": "object",
     "properties": {
@@ -9,7 +9,162 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "Local Controller Platform"
+      },
+      "pollPeriod": {
+        "title": "Poll period",
+        "type": "number",
+        "required": false
+      },
+      "scenes": {
+         "title": "Automation scenes",
+         "type": "array",
+         "required": false,
+         "items": {
+            "title": "Scene",
+            "type:": "object",
+            "properties": {
+              "name": {
+                "title": "Scene name",
+                "type": "string"
+              },
+              "intervals": {
+                "title": "Valid time intervals",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                     "after": {
+                       "title": "Start time",
+                       "type": "string"
+                     },
+                     "before": {
+                       "title": "End time",
+                       "type": "string"
+                     } 
+                   }
+                }
+
+              },
+              "conditions": {
+                "title": "Device conditions",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                     "device": {
+                       "title": "Accessory device",
+                       "type": "string"
+                     },
+                     "charcteristic": {
+                       "title": "Accessory characteristic",
+                       "type": "string"
+                     },
+                     "operator": {
+                       "title": "Condition comparison operator",
+                       "type": "string"
+                     },
+                     "value": {
+                       "title": "Comparison value",
+                       "type": "string"
+                     }
+                   }
+                 }
+              },
+              "open": {
+                "title": "Open scene actions",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                     "device": {
+                       "title": "Accessory device",
+                       "type": "string"
+                     },
+                     "charcteristic": {
+                       "title": "Accessory characteristic",
+                       "type": "string"
+                     },
+                     "value": {
+                       "title": "Device characteristic set value",
+                       "type": "string"
+                     }
+                   }
+                }
+              },
+              "close": {
+                "title": "Close scene actions",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                     "device": {
+                       "title": "Accessory device",
+                       "type": "string"
+                     },
+                     "charcteristic": {
+                       "title": "Accessory characteristic",
+                       "type": "string"
+                     },
+                     "value": {
+                       "title": "Device characteristic set value",
+                       "type": "string"
+                     }
+                   }
+                }
+
+              }
+            }
+         }
+      },
+      "modulePath": {
+        "title": "Module file paths",
+        "type": "array",
+        "items": {
+           "type": "string"
+        }
+      },
+      "bridge": {
+        "title": "Target bridges",
+        "type": "array",
+        "items": {
+           "type": "object",
+           "properties": {
+              "url": {
+                 "title": "URL to bridge",
+                 "type": "string",
+                 "required": true,
+                 "default": "http://localhost:80"
+              },
+              "username": {
+                 "title": "Bridge account username",
+                 "type": "string",
+                 "required": true
+              },
+              "password": {
+                 "title": "Bridge account password",
+                 "type": "string",
+                 "required": true
+              },
+              "devices": {
+                "title": "Accessory device selection",
+                "type": "array",
+                "items": {
+                   "type": "object",
+                   "properties" : {
+                      "device": {
+                         "type": "string",
+                         "title": "Device name used in automations"
+                      },
+                      "accessory": {
+                         "type": "string",
+                         "title": "Accessory name in bridge"
+                      }
+                   }
+                }
+              }
+           }
+        }
       }
     }
   }
