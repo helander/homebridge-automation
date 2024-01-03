@@ -4,13 +4,13 @@ import {Logger,PlatformConfig} from 'homebridge';
 
 
 
-type X =  {
+type XX =  {
   characteristicType: string,
   value: any
 };
 
 
-export class HomebridgeBridge {
+export class AutomationBridge {
 
    token: string;
    url: string;
@@ -18,21 +18,21 @@ export class HomebridgeBridge {
    username: string;
    password: string;
    selection: any;
-   devices: any;
-   accessories: any[];
+//   devices: any;
+///   accessories: any[];
 
    constructor(log: Logger, config: any) {
      this.log = log;
      this.url = config.url ;
      this.username = config.username ;
      this.password = config.password ;
-     this.selection = {};
-     for(let i = 0; i < config.devices.length; i++) {
-       this.selection[config.devices[i].device] = config.devices[i].accessory;
-     }
-     //this.log.debug('Selection',this.selection);
+//     this.selection = {};
+//     for(let i = 0; i < config.devices.length; i++) {
+//       this.selection[config.devices[i].device] = config.devices[i].accessory;
+//     }
+//     //this.log.debug('Selection',this.selection);
      this.token = "";
-     this.accessories = [];
+///     this.accessories = [];
    }
 
    async start() {
@@ -43,13 +43,18 @@ export class HomebridgeBridge {
        this.log.info('Successful login of user',this.username,'at homebridge server',this.url);
      }
 
-     this.devices = {};
-     this.accessories = await this.getAccessories();
-     for(const key in this.selection) {
-        const accessory = this.accessories.find((element) => element.accessoryInformation.Name.trim() == this.selection[key]);
-        this.devices[key] = accessory;
-     }
-     this.log.info('Number of accessories:',this.accessories.length);
+//     this.devices = {};
+     //let accessories = await this.getAccessories();
+     //for(let i = 0; i < accessories.length; i++) {
+        //accessories[i].bridge = this;
+     //}
+//     for(const key in this.selection) {
+//        const accessory = this.accessories.find((element) => element.accessoryInformation.Name.trim() == this.selection[key]);
+//        this.devices[key] = accessory;
+//     }
+     //this.log.info('Number of accessories:',accessories.length);
+
+     //return accessories;
 
 
    }
@@ -106,6 +111,7 @@ export class HomebridgeBridge {
          if (response.status != 200) {
             this.log.error('Could not get accessories');
          } else {
+            //this.log.warn('resp',response.data);
             accs = response.data;
          }
       return accs;
@@ -113,15 +119,11 @@ export class HomebridgeBridge {
 
 
 
-    async getAccessoryCharacteristics(key) {
+    async getAccessoryCharacteristics(accessory) {
 
        await this.getValidToken()
-       if (this.devices[key] == undefined) {
-          this.log.error('getAccessoryCharacteristics no such device',key)
-          return undefined
-       } 
        const response = await axios({
-          url: this.url+"/api/accessories/"+this.devices[key].uniqueId,
+          url: this.url+"/api/accessories/"+accessory.uniqueId,
           method: "get",
           headers: { "accept": "* / *", "Authorization": `Bearer ${this.token}` },
        });
@@ -135,18 +137,16 @@ export class HomebridgeBridge {
         return response.data.values
    }
 
-   async setAccessoryCharacteristics(key,charKey,charValue) {
+   async setAccessoryCharacteristics(accessory,charKey,charValue) {
 
       await this.getValidToken()
-      let char: X  = {characteristicType: "", value: ""}
+      let char: XX  = {characteristicType: "", value: ""}
       char.characteristicType = charKey
       char.value = charValue
-      if (this.devices[key] == undefined) {
-         this.log.error('setAccessoryCharacteristics no such device',key)
-         return undefined
-      }
+      this.log.debug('SET',accessory.accessoryInformation.Name,charKey,charValue);
+      //return true;
       const response = await axios({
-         url: this.url+"/api/accessories/"+this.devices[key].uniqueId,
+         url: this.url+"/api/accessories/"+accessory.uniqueId,
          method: "put",
          data: JSON.stringify(char),
          headers: { "accept": "* / *", "Authorization": `Bearer ${this.token}`, "Content-Type": "application/json"},
@@ -162,52 +162,4 @@ export class HomebridgeBridge {
 }
 
 
-export class AutomationContext {
-  log: Logger;
-  bridges: HomebridgeBridge[];
-  constructor(log: Logger, bridges: HomebridgeBridge[]) {
-    this.log = log;
-    this.bridges = bridges;
-  }
-  async get(key: string) {
-     for(let i = 0; i < this.bridges.length; i++) {
-       if (this.bridges[i].devices[key] != undefined) {
-         this.log.debug('AutomationContext.get() Found device with name',key,'in bridge',i)
-         return await this.bridges[i].getAccessoryCharacteristics(key);
-       }
-     }
-     this.log.error('AutomationContext.get() No device with name '+key+' found');
-     return undefined; 
-  }
-  async set(key: string, ctype: string, cvalue: any) {
-     for(let i = 0; i < this.bridges.length; i++) {
-       if (this.bridges[i].devices[key] != undefined) {
-         this.log.debug('AutomationContext.set() Found device with name',key,'in bridge',i)
-         return await this.bridges[i].setAccessoryCharacteristics(key,ctype,cvalue);
-       }
-     }
-     this.log.error('AutomationContext.set() No device with name '+key+' found');
-     return undefined; 
-  }
 
-  after(hour,minute) {
-     const now = new Date()
-     const hours = now.getHours()
-     const minutes = now.getMinutes()
-
-     if (hours > hour) return true
-     if (hours < hour) return false
-     return minutes >= minute
-   }
-
-   before(hour,minute) {
-      const now = new Date()
-      const hours = now.getHours()
-      const minutes = now.getMinutes()
-
-      if (hours < hour) return true
-      if (hours > hour) return false
-      return minutes < minute
-   }
-
-}
