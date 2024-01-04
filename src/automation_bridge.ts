@@ -1,14 +1,10 @@
 import axios from 'axios';
-import {Logger,PlatformConfig} from 'homebridge';
+import {Logger} from 'homebridge';
 
-
-
-
-type XX =  {
+type CharacteristicValue =  {
   characteristicType: string,
   value: any
 };
-
 
 export class AutomationBridge {
 
@@ -17,22 +13,14 @@ export class AutomationBridge {
    log: Logger;
    username: string;
    password: string;
-   selection: any;
-//   devices: any;
-///   accessories: any[];
 
    constructor(log: Logger, config: any) {
      this.log = log;
      this.url = config.url ;
      this.username = config.username ;
      this.password = config.password ;
-//     this.selection = {};
-//     for(let i = 0; i < config.devices.length; i++) {
-//       this.selection[config.devices[i].device] = config.devices[i].accessory;
-//     }
-//     //this.log.debug('Selection',this.selection);
      this.token = "";
-///     this.accessories = [];
+
    }
 
    async start() {
@@ -42,22 +30,8 @@ export class AutomationBridge {
      } else {
        this.log.info('Successful login of user',this.username,'at homebridge server',this.url);
      }
-
-//     this.devices = {};
-     //let accessories = await this.getAccessories();
-     //for(let i = 0; i < accessories.length; i++) {
-        //accessories[i].bridge = this;
-     //}
-//     for(const key in this.selection) {
-//        const accessory = this.accessories.find((element) => element.accessoryInformation.Name.trim() == this.selection[key]);
-//        this.devices[key] = accessory;
-//     }
-     //this.log.info('Number of accessories:',accessories.length);
-
-     //return accessories;
-
-
    }
+
    async getNewToken() {
     try {
       const bodyObject = { username: this.username, password: this.password, otp: "string" };
@@ -117,43 +91,23 @@ export class AutomationBridge {
       return accs;
    }
 
-
-
-    async getAccessoryCharacteristics(accessory) {
-
-       await this.getValidToken()
-       const response = await axios({
-          url: this.url+"/api/accessories/"+accessory.uniqueId,
-          method: "get",
-          headers: { "accept": "* / *", "Authorization": `Bearer ${this.token}` },
-       });
-
-
-        if (response.status != 200) {
-            this.log.error('Could not get accessory charcteristics',response.status)
-            return undefined
-        }
-  
-        return response.data.values
-   }
-
-   async setAccessoryCharacteristics(accessory,charKey,charValue) {
+   async setAccessoryCharacteristics(uniqueId,charKey,charValue) {
 
       await this.getValidToken()
-      let char: XX  = {characteristicType: "", value: ""}
+      let char: CharacteristicValue = {characteristicType: "", value: ""}
       char.characteristicType = charKey
       char.value = charValue
-      this.log.debug('SET',accessory.accessoryInformation.Name,charKey,charValue);
-      //return true;
+      //this.log.debug('SET',uniqueId,charKey,charValue);
+
       const response = await axios({
-         url: this.url+"/api/accessories/"+accessory.uniqueId,
+         url: this.url+"/api/accessories/"+uniqueId,
          method: "put",
          data: JSON.stringify(char),
-         headers: { "accept": "* / *", "Authorization": `Bearer ${this.token}`, "Content-Type": "application/json"},
+         headers: { "accept": "*/*", "Authorization": `Bearer ${this.token}`, "Content-Type": "application/json"},
       });
 
       if (response.status != 200) {
-         this.log.error('hbapi','Could not set accessory charcteristics',response.status)
+         this.log.error('hbapi','Could not set accessory characteristics',response.status)
          return undefined
       }
       return true
@@ -161,5 +115,17 @@ export class AutomationBridge {
 
 }
 
+type Nullable<T>  = T | null
 
 
+export class AccessoryData {
+
+  bridge : Nullable<AutomationBridge>;   
+  values : CharacteristicValue[] = [];
+  uniqueId : string = "";
+
+  constructor() {
+    this.bridge = null;
+  }
+
+}
