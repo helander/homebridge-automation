@@ -127,15 +127,20 @@
                  "required": true,
                  "default": "http://localhost:80"
               },
+              "pin": {
+                "title": "Hap bridge pin",
+                "type": "string",
+                "required": false
+              },
               "username": {
-                 "title": "Bridge account username",
+                 "title": "Api bridge account username",
                  "type": "string",
-                 "required": true
+                 "required": false
               },
               "password": {
-                 "title": "Bridge account password",
+                 "title": "Api bridge account password",
                  "type": "string",
-                 "required": true
+                 "required": false
               }
 
            }
