@@ -1,7 +1,8 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 
-import {AutomationBridge, AccessoryData} from './automation_bridge';
-
+import {AccessoryData} from './accessory';
+import {AccessoryRepository} from './repository';
+import {NoBridge, ApiBridge} from './bridge';
 import {AutomationScenes} from './scenes';
 
 /**
@@ -34,39 +35,36 @@ export class AutomationHomebridgePlatform implements DynamicPlatformPlugin {
         (async() => {
           this.log.info('Periodic poll start');
 
-          const accessories: AccessoryData[] = [];
+          const repo: AccessoryRepository = new AccessoryRepository();
 
           // Create the 'datetime' accessory
-          const accDatetime: AccessoryData = new AccessoryData();
+          const accDatetime: AccessoryData = new AccessoryData('datetime', []);
           const timeNow: Date = new Date();
           accDatetime.values['DayMinutes'] = timeNow.getMinutes() + (60*timeNow.getHours());
-          accessories['datetime'] = accDatetime;
 
-          // Get accessories from all configured bridges. Save the ones required by the scenes.
-          for (let i = 0; i < config.bridge.length; i++) {
-            const bridge: AutomationBridge = new AutomationBridge(this.log, config.bridge[i]);
-            await bridge.start();
-            const accs : any[] = await bridge.getAccessories();
-            for(let j = 0; j < accs.length; j++) {
-              const name: string = accs[j].accessoryInformation.Name.trim();
-              if (this.requiredAccessories.includes(name)) {
-                const accData: AccessoryData = new AccessoryData();
-                accData.values = accs[j].values;
-                accData.uniqueId = accs[j].uniqueId;
-                accData.bridge = bridge;
-                accessories[name] = accData;
+          const nobridge = new NoBridge(this.log);
+          nobridge.addAccessory(accDatetime);
+
+          repo.addBridge(nobridge);
+
+          // Get accessories from all configured bridges.
+          if (config.apibridge !== undefined) {
+            for (let i = 0; i < config.apibridge.length; i++) {
+              const bridge: ApiBridge = new ApiBridge(this.log, config.apibridge[i]);
+              await bridge.start();
+              repo.addBridge(bridge);
+            }
+            // Check if all required accessories have been found.
+            for (let i = 0; i < this.requiredAccessories.length; i++) {
+              if (repo.get(this.requiredAccessories[i]) === undefined) {
+                this.log.error('No accessory found with name', this.requiredAccessories[i]);
               }
             }
+            // "Run" the configured scenes
+            await this.scenes.run(repo);
+          } else {
+            this.log.warn('No bridges have been defined. Please configure at least one bridge.');
           }
-          // Check if all required accessories have been found.
-          for (let i = 0; i < this.requiredAccessories.length; i++) {
-            if (accessories[this.requiredAccessories[i]] === undefined) {
-              this.log.error('No accessory found with name', this.requiredAccessories[i]);
-            }
-          }
-          // "Run" the configured scenes
-          await this.scenes.run(accessories);
-
           this.log.info('Periodic poll end');
         })();
 

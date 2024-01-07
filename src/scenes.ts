@@ -1,6 +1,6 @@
 import {Logger} from 'homebridge';
 
-import {AccessoryData} from './automation_bridge';
+import {AccessoryRepository} from './repository';
 
 
 type ConditionConfig = {
@@ -35,16 +35,15 @@ class Condition {
     return this.accessory;
   }
 
-  state(accessories: AccessoryData[]): boolean {
+  state(accessories: AccessoryRepository): boolean {
     let conditionsOk = true;
 
-    if (accessories[this.accessory] === undefined) {
+    if (accessories.get(this.accessory) === undefined) {
       this.log.error('Condition requires missing accessory', this.accessory);
       return false;
     }
 
-    const values = accessories[this.accessory].values;
-    const subjectValue = values[this.characteristic];
+    const subjectValue = accessories.getAccessoryCharacteristic(this.accessory, this.characteristic);
 
     if (this.operator === 'equal') {
       if (subjectValue !== this.value) {
@@ -68,6 +67,8 @@ class Condition {
     }
     this.log.info('Condition',
       conditionsOk,
+      'current',
+      subjectValue,
       this.accessory,
       this.characteristic,
       this.operator,
@@ -105,7 +106,7 @@ class Trigger {
     return names;
   }
 
-  state(accessories: AccessoryData[]): boolean {
+  state(accessories: AccessoryRepository): boolean {
     let triggerOk = true;
     for(let i = 0; i < this.conditions.length; i++) {
       const conditionState = this.conditions[i].state(accessories);
@@ -145,20 +146,13 @@ class Action {
     return this.accessory;
   }
 
-  async execute(accessories: AccessoryData[]): Promise<void> {
-    if (accessories[this.accessory] === undefined) {
+  async execute(accessories: AccessoryRepository): Promise<void> {
+    if (accessories.get(this.accessory) === undefined) {
       this.log.error('Action requires missing accessory', this.accessory);
       return;
     }
-    const accData = accessories[this.accessory];
-    if (accData.bridge !== null) {
-      this.log.warn('Set', this.accessory, this.characteristic, this.value);
-      await accData.bridge.setAccessoryCharacteristics(
-        accData.uniqueId,
-        this.characteristic,
-        this.value,
-      );
-    }
+    this.log.warn('Set', this.accessory, this.characteristic, this.value);
+    await accessories.setAccessoryCharacteristic(this.accessory, this.characteristic, this.value);
   }
 }
 
@@ -213,7 +207,7 @@ class Scene {
     return names;
   }
 
-  async run(accessories: AccessoryData[]): Promise<void> {
+  async run(accessories: AccessoryRepository): Promise<void> {
     this.log.info('Scene', this.name);
     let triggersOk = false;
     for(let i = 0; i < this.triggers.length; i++) {
@@ -245,8 +239,12 @@ export class AutomationScenes {
   constructor(log: Logger, config: SceneConfig[]) {
     this.log = log;
     this.scenes = [];
-    for(let i = 0; i < config.length; i++) {
-      this.scenes.push(new Scene(this.log, config[i]));
+    if (config !== undefined) {
+      for(let i = 0; i < config.length; i++) {
+        this.scenes.push(new Scene(this.log, config[i]));
+      }
+    } else {
+      this.log.warn('No scenes configured. Please configure at least one scene.');
     }
 
   }
@@ -262,7 +260,7 @@ export class AutomationScenes {
     return Array.from(new Set(names));
   }
 
-  async run(accessories: AccessoryData[]): Promise<void> {
+  async run(accessories: AccessoryRepository): Promise<void> {
     for(let i = 0; i < this.scenes.length; i++) {
       await this.scenes[i].run(accessories);
     }

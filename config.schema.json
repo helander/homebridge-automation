@@ -115,8 +115,8 @@
             }
          }
       },
-      "bridge": {
-        "title": "Target bridges",
+      "apibridge": {
+        "title": "UI plugin API bridges",
         "type": "array",
         "items": {
            "type": "object",
@@ -141,6 +141,27 @@
                  "title": "Api bridge account password",
                  "type": "string",
                  "required": false
+              }
+
+           }
+        }
+      },
+      "hapbridge": {
+        "title": "HAP bridges",
+        "type": "array",
+        "items": {
+           "type": "object",
+           "properties": {
+              "url": {
+                 "title": "URL to bridge",
+                 "type": "string",
+                 "required": true,
+                 "default": "http://localhost:51070"
+              },
+              "pin": {
+                "title": "Hap bridge pin",
+                "type": "string",
+                "required": false
               }
 
            }
