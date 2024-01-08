@@ -1,28 +1,21 @@
 import {Logger} from 'homebridge';
-
+import {ConditionConfig, TriggerConfig, ActionConfig, SceneConfig} from './config';
 import {AccessoryRepository} from './repository';
 
 
-type ConditionConfig = {
-  accessory: string;
-  characteristic: string;
-  operator: string;
-  value: string;
-};
 
 class Condition {
 
-  accessory: string;
-  characteristic: string;
-  operator: string;
+  //accessory: string;
+  //characteristic: string;
+  //operator: string;
   value: number;
+  config: ConditionConfig;
   log: Logger;
 
   constructor(log: Logger, config: ConditionConfig) {
     this.log = log;
-    this.accessory = config.accessory;
-    this.characteristic = config.characteristic;
-    this.operator = config.operator;
+    this.config = config;
     const parts = config.value.split(':');
     if (parts.length === 1) {
       this.value = Number(parts[0]);
@@ -32,65 +25,63 @@ class Condition {
   }
 
   getAccessoryName(): string {
-    return this.accessory;
+    return this.config.accessory;
   }
 
   state(accessories: AccessoryRepository): boolean {
     let conditionsOk = true;
 
-    if (accessories.get(this.accessory) === undefined) {
-      this.log.error('Condition requires missing accessory', this.accessory);
+    if (accessories.get(this.config.accessory) === undefined) {
+      this.log.error('Condition requires missing accessory', this.config.accessory);
       return false;
     }
 
-    const subjectValue = accessories.getAccessoryCharacteristic(this.accessory, this.characteristic);
+    const subjectValue = accessories.getAccessoryCharacteristic(this.config.accessory, this.config.characteristic);
 
-    if (this.operator === 'equal') {
+    if (this.config.operator === 'equal') {
       if (subjectValue !== this.value) {
         conditionsOk = false;
       }
-    } else if (this.operator === 'notequal') {
+    } else if (this.config.operator === 'notequal') {
       if (subjectValue === this.value) {
         conditionsOk = false;
       }
-    } else if (this.operator === 'higher') {
+    } else if (this.config.operator === 'higher') {
       if (subjectValue < this.value) {
         conditionsOk = false;
       }
-    } else if (this.operator === 'lower') {
+    } else if (this.config.operator === 'lower') {
       if (subjectValue >= this.value) {
         conditionsOk = false;
       }
     } else {
-      this.log.error('Unknown condition operator', this.operator);
+      this.log.error('Unknown condition operator', this.config.operator);
       return false;
     }
     this.log.info('Condition',
       conditionsOk,
       'current',
       subjectValue,
-      this.accessory,
-      this.characteristic,
-      this.operator,
+      this.config.accessory,
+      this.config.characteristic,
+      this.config.operator,
       this.value);
     return conditionsOk;
   }
 
 }
 
-type TriggerConfig = {
-  inverted: boolean;
-  conditions: ConditionConfig[];
-};
 
 class Trigger {
-  inverted: boolean;
+  //inverted: boolean;
   conditions: Condition[];
+  config: TriggerConfig;
   log: Logger;
 
   constructor(log: Logger, config: TriggerConfig) {
     this.log = log;
-    this.inverted = config.inverted;
+    this.config = config;
+    //this.inverted = config.inverted;
     this.conditions = [];
     for(let i = 0; i < config.conditions.length; i++) {
       const condition: Condition = new Condition(this.log, config.conditions[i]);
@@ -114,7 +105,7 @@ class Trigger {
         triggerOk = false;
       }
     }
-    if (this.inverted) {
+    if (this.config.inverted) {
       triggerOk = !triggerOk;
     }
     this.log.debug('Trigger', triggerOk);
@@ -123,45 +114,36 @@ class Trigger {
 
 }
 
-type ActionConfig = {
-  accessory: string;
-  characteristic: string;
-  value: string;
-};
 
 class Action {
-  accessory: string;
-  characteristic: string;
+  //accessory: string;
+  //characteristic: string;
   value: number;
+  config: ActionConfig;
   log: Logger;
 
   constructor(log: Logger, config: ActionConfig) {
     this.log = log;
-    this.accessory = config.accessory;
-    this.characteristic = config.characteristic;
+    this.config = config;
+    //this.accessory = config.accessory;
+    //this.characteristic = config.characteristic;
     this.value = Number(config.value);
   }
 
   getAccessoryName(): string {
-    return this.accessory;
+    return this.config.accessory;
   }
 
   async execute(accessories: AccessoryRepository): Promise<void> {
-    if (accessories.get(this.accessory) === undefined) {
-      this.log.error('Action requires missing accessory', this.accessory);
+    if (accessories.get(this.config.accessory) === undefined) {
+      this.log.error('Action requires missing accessory', this.config.accessory);
       return;
     }
-    this.log.warn('Set', this.accessory, this.characteristic, this.value);
-    await accessories.setAccessoryCharacteristic(this.accessory, this.characteristic, this.value);
+    this.log.warn('Set', this.config.accessory, this.config.characteristic, this.value);
+    await accessories.setAccessoryCharacteristic(this.config.accessory, this.config.characteristic, this.value);
   }
 }
 
-type SceneConfig = {
-  name: string;
-  triggers: TriggerConfig[];
-  open: ActionConfig[];
-  close: ActionConfig[];
-};
 
 class Scene {
   name: string;

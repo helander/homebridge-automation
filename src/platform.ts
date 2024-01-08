@@ -4,6 +4,7 @@ import {AccessoryData} from './accessory';
 import {AccessoryRepository} from './repository';
 import {NoBridge, ApiBridge} from './bridge';
 import {AutomationScenes} from './scenes';
+import {AutomationConfig} from './config';
 
 /**
  * AutomationHomebridgePlatform
@@ -18,6 +19,7 @@ export class AutomationHomebridgePlatform implements DynamicPlatformPlugin {
 
   private scenes: AutomationScenes;
   private requiredAccessories: string[];
+  private cfg: AutomationConfig;
 
   constructor(
     public readonly log: Logger,
@@ -25,8 +27,9 @@ export class AutomationHomebridgePlatform implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
 
-    this.log.info('Full config', config);
-    this.scenes = new AutomationScenes(this.log, config.scenes);
+    this.cfg = config as unknown as AutomationConfig;
+    this.log.info('Full config', this.cfg);
+    this.scenes = new AutomationScenes(this.log, this.cfg.scenes);
     this.requiredAccessories = this.scenes.requiredAccessoryNames();
     this.log.warn('Required accessories', this.requiredAccessories);
 
@@ -48,9 +51,9 @@ export class AutomationHomebridgePlatform implements DynamicPlatformPlugin {
           repo.addBridge(nobridge);
 
           // Get accessories from all configured bridges.
-          if (config.apibridge !== undefined) {
-            for (let i = 0; i < config.apibridge.length; i++) {
-              const bridge: ApiBridge = new ApiBridge(this.log, config.apibridge[i]);
+          if (this.cfg.apibridge !== undefined) {
+            for (let i = 0; i < this.cfg.apibridge.length; i++) {
+              const bridge: ApiBridge = new ApiBridge(this.log, this.cfg.apibridge[i]);
               await bridge.start();
               repo.addBridge(bridge);
             }
@@ -71,7 +74,7 @@ export class AutomationHomebridgePlatform implements DynamicPlatformPlugin {
       } catch(error) {
         this.log.error('Poll period error:', error);
       }
-    }, this.config.pollPeriod || 20000);
+    }, this.cfg.pollPeriod || 20000);
 
   }
 
