@@ -1,7 +1,9 @@
-import {NoBridge, ApiBridge} from './bridge';
+import {NoBridge} from './bridge';
+import {HapBridge} from './hap-bridge';
+import {ApiBridge} from './api-bridge';
 import {AccessoryData} from './accessory';
 
-export type Bridge = ApiBridge | NoBridge;
+export type Bridge = HapBridge | ApiBridge | NoBridge;
 
 export class AccessoryRepository {
   accessories: Bridge[] = [];

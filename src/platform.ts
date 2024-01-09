@@ -2,7 +2,9 @@ import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, 
 
 import {AccessoryData} from './accessory';
 import {AccessoryRepository} from './repository';
-import {NoBridge, ApiBridge} from './bridge';
+import {NoBridge} from './bridge';
+import {HapBridge} from './hap-bridge';
+import {ApiBridge} from './api-bridge';
 import {AutomationScenes} from './scenes';
 import {AutomationConfig} from './config';
 
@@ -51,20 +53,36 @@ export class AutomationHomebridgePlatform implements DynamicPlatformPlugin {
           repo.addBridge(nobridge);
 
           // Get accessories from all configured bridges.
-          if (this.cfg.apibridge !== undefined) {
-            for (let i = 0; i < this.cfg.apibridge.length; i++) {
-              const bridge: ApiBridge = new ApiBridge(this.log, this.cfg.apibridge[i]);
-              await bridge.start();
-              repo.addBridge(bridge);
-            }
-            // Check if all required accessories have been found.
-            for (let i = 0; i < this.requiredAccessories.length; i++) {
-              if (repo.get(this.requiredAccessories[i]) === undefined) {
-                this.log.error('No accessory found with name', this.requiredAccessories[i]);
+          if (this.cfg.apibridge !== undefined && this.cfg.hapbridge !== undefined) {
+            let numberOfBridges = 0;
+            if (this.cfg.apibridge !== undefined) {
+              for (let i = 0; i < this.cfg.apibridge.length; i++) {
+                numberOfBridges++;
+                const bridge: ApiBridge = new ApiBridge(this.log, this.cfg.apibridge[i]);
+                await bridge.start();
+                repo.addBridge(bridge);
               }
             }
-            // "Run" the configured scenes
-            await this.scenes.run(repo);
+            if (this.cfg.hapbridge !== undefined) {
+              for (let i = 0; i < this.cfg.hapbridge.length; i++) {
+                numberOfBridges++;
+                const bridge: HapBridge = new HapBridge(this.log, this.cfg.hapbridge[i]);
+                await bridge.start();
+                repo.addBridge(bridge);
+              }
+            }
+            if (numberOfBridges > 0) {
+              // Check if all required accessories have been found.
+              for (let i = 0; i < this.requiredAccessories.length; i++) {
+                if (repo.get(this.requiredAccessories[i]) === undefined) {
+                  this.log.error('No accessory found with name', this.requiredAccessories[i]);
+                }
+              }
+              // "Run" the configured scenes
+              await this.scenes.run(repo);
+            } else {
+              this.log.warn('No bridges have been defined. Please configure at least one bridge.');
+            }
           } else {
             this.log.warn('No bridges have been defined. Please configure at least one bridge.');
           }
